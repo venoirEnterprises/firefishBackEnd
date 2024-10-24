@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "firefishBackEnd", "firefishBackEnd\firefishBackEnd.csproj", "{1ABE7EFD-804B-4261-8439-5975CAD529FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1ABE7EFD-804B-4261-8439-5975CAD529FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1ABE7EFD-804B-4261-8439-5975CAD529FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1ABE7EFD-804B-4261-8439-5975CAD529FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ABE7EFD-804B-4261-8439-5975CAD529FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C68B5E60-5D61-4BB8-8971-41920EBE83B8}
+	EndGlobalSection
+EndGlobal
