@@ -1,4 +1,5 @@
 ﻿using firefishBackEnd.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -85,30 +86,32 @@ namespace firefishBackEnd.Services
                 }
             }
             conn.Close();
+            candidate.SkillIDs = getCurrentSkillIdsForCandidate(ID);
+            return candidate;
+        }
+
+        public List<int> getCurrentSkillIdsForCandidate(int CandidateID)
+        {
             conn.Open();
+            List<int> SkillIDs = new List<int>();
 
-            candidate.SkillIDs = new List<int>();
-
-            using (SqlCommand command = new SqlCommand(@"SELECT SkillID FROM CandidateSkill
-                WHERE CandidateID = @candidateID", conn))
+            using (SqlCommand command = new SqlCommand(@"SELECT SkillID FROM CandidateSkill WHERE CandidateID = @candidateID", conn))
             {
-                command.Parameters.Add("@candidateID", SqlDbType.Int).Value = ID;
+                command.Parameters.Add("@candidateID", SqlDbType.Int).Value = CandidateID;
 
                 SqlDataReader reader = command.ExecuteReader();
                 while (reader.Read())
                 {
-                    candidate.SkillIDs.Add(reader.GetInt32(0));
+                    SkillIDs.Add(reader.GetInt32(0));
                 }
             }
-
             conn.Close();
-            return candidate;
+            return SkillIDs;
         }
 
         public bool CreateCandidate(Candidate candidate)
         {
             conn.Open();
-
             String SQL =
             @"INSERT INTO Candidate (ID,FirstName,Surname,DateOfBirth,Address1,Town,Country,PostCode,PhoneHome,PhoneMobile,PhoneWork,CreatedDate, UpdatedDate)" +
             "VALUES ((SELECT MAX(ID)+1 FROM Candidate),@FirstName,@Surname,@DateOfBirth,@Address1,@Town,@Country,@PostCode,@PhoneHome,@PhoneMobile,@PhoneWork, GETDATE(), GETDATE())";
@@ -142,7 +145,7 @@ namespace firefishBackEnd.Services
                 cmd.Parameters.Add("@FirstName", SqlDbType.VarChar, 50).Value = candidate.FirstName;
                 cmd.Parameters.Add("@Surname", SqlDbType.VarChar, 50).Value = candidate.Surname;
                 cmd.Parameters.Add(new SqlParameter("@Address1", candidate.Address1 == null ? DBNull.Value : candidate.Address1));
-                cmd.Parameters.Add(new SqlParameter("@DateOfBirth", candidate.DateOfBirth == null ? DBNull.Value : candidate.DateOfBirth));
+                cmd.Parameters.Add("@DateOfBirth", SqlDbType.Date).Value = candidate.DateOfBirth;
                 cmd.Parameters.Add(new SqlParameter("@Town", candidate.Town == null ? DBNull.Value : candidate.Town));
                 cmd.Parameters.Add(new SqlParameter("@Country", candidate.Country == null ? DBNull.Value : candidate.Country));
                 cmd.Parameters.Add(new SqlParameter("@PostCode", candidate.PostCode == null ? DBNull.Value : candidate.PostCode));
@@ -151,6 +154,65 @@ namespace firefishBackEnd.Services
                 cmd.Parameters.Add(new SqlParameter("@PhoneWork", candidate.PhoneWork == null ? DBNull.Value : candidate.PhoneWork));
                 cmd.Parameters.Add("@ID", SqlDbType.Int).Value = candidate.ID;
                 cmd.CommandType = CommandType.Text;
+                cmd.ExecuteNonQuery();
+            }
+
+            //Get current skill IDs, so we know which are creates, deletes, or updates
+
+            conn.Close();
+
+            List<int> currentSkillIds = getCurrentSkillIdsForCandidate(candidate.ID);
+
+            candidate.SkillIDs.ForEach(skillId =>
+            {
+                if(currentSkillIds.Contains(skillId))
+                {
+                    UpdateCandidateSkill(candidate.ID, skillId);
+                    currentSkillIds.Remove(skillId);
+                } else
+                {
+                    CreateCandidateSkill(candidate.ID, skillId);
+                }
+            });
+
+            //The list of new skills is empty, but there are still entries in current skills, these are deletions
+            currentSkillIds.ForEach(deletedCandidateSkillID =>
+            {
+                DeleteCandidateSkill(candidate.ID, deletedCandidateSkillID);
+            });
+
+            return true;
+        }
+        public bool UpdateCandidateSkill(int CandidateID, int SkillID)
+        {
+            conn.Open();
+            using (SqlCommand cmd = new SqlCommand("UPDATE CandidateSkill SET UpdatedDate = GETDATE() WHERE CandidateID = @CandidateID AND SkillID = @SkillID", conn)) {
+                cmd.ExecuteNonQuery();
+            }
+            conn.Close();
+            return true;
+        }
+        public bool CreateCandidateSkill(int CandidateID, int SkillID)
+        {
+
+            conn.Open();
+            using (SqlCommand cmd = new SqlCommand("INSERT INTO CandidateSkill (ID, CandidateID, CreatedDate, UpdatedDate, SkillID) VALUES ((SELECT MAX(ID)+1 FROM CandidateSkill), @CandidateID, GETDATE(), GETDATE(), @SkillID)", conn))
+            {
+                cmd.Parameters.Add(new SqlParameter("@CandidateID", CandidateID));
+                cmd.Parameters.Add(new SqlParameter("@SkillID", SkillID));
+                cmd.ExecuteNonQuery();
+            }
+            conn.Close();
+            return true;
+        }
+        public bool DeleteCandidateSkill(int CandidateID, int SkillID)
+        {
+
+            conn.Open();
+            using (SqlCommand cmd = new SqlCommand("DELETE FROM CandidateSkill WHERE CandidateID = @CandidateID AND SkillID = @SkillID", conn))
+            {
+                cmd.Parameters.Add(new SqlParameter("@CandidateID", CandidateID));
+                cmd.Parameters.Add(new SqlParameter("@SkillID", SkillID)); 
                 cmd.ExecuteNonQuery();
             }
             conn.Close();
