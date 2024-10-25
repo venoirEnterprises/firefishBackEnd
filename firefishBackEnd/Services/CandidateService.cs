@@ -1,18 +1,16 @@
 ﻿using firefishBackEnd.Models;
+using System.Data;
 using System.Data.SqlClient;
-using System.Reflection.Metadata.Ecma335;
 
 namespace firefishBackEnd.Services
 {
     public class CandidateService
     {
-
         SqlConnection conn = new SqlConnection("Data Source=.\\SQLEXPRESS;Database=Web_API_Task;Integrated Security=True;Connect Timeout=30;Encrypt=False;");
 
-
-        public List<Candidate> GetCandidates()
+        public List<CandidateListingItem> GetCandidates()
         {
-            List<Candidate> candidates = new List<Candidate>();
+            List<CandidateListingItem> candidates = new List<CandidateListingItem>();
 
             conn.Open();
 
@@ -25,24 +23,63 @@ namespace firefishBackEnd.Services
                     WHERE cs.CandidateID = c.ID
                     ORDER BY s2.Name
                     FOR xml path('')
-                ),1,1,''),'') as Skills
-                from Candidate c
-                GROUP BY ID,FirstName,Surname,DateOfBirth
-                ORDER BY ID ASC", conn))
+                ),1,1,''),'') as Skills, 
+            	Address1, Town, Country, PostCode, PhoneHome, PhoneMobile, PhoneWork, UpdatedDate
+                FROM Candidate c
+                GROUP BY ID,FirstName,Surname,DateOfBirth, Address1, Town, Country, PostCode, PhoneHome, PhoneMobile, PhoneWork, UpdatedDate
+                ORDER BY UpdatedDate DESC", conn))
             {
                 SqlDataReader reader = command.ExecuteReader();
                 while (reader.Read()) {
-                    candidates.Add(new Candidate() { 
-                        firstName = reader.GetString(1), 
-                        surname = reader.GetString(2), 
-                        dateOfBirth = Convert.ToDateTime(reader["DateOfBirth"]).ToString("dd/MM/yyyy"),
-                        skills = reader.GetString(4)
+                    candidates.Add(new CandidateListingItem() { 
+                        FirstName = reader.GetString(1), 
+                        Surname = reader.GetString(2), 
+                        DateOfBirth = Convert.ToDateTime(reader["DateOfBirth"]).ToString("dd/MM/yyyy"),
+                        skills = reader.GetString(4),
+                        Address1 = SafeGetString(reader, 5),
+                        Town = SafeGetString(reader, 6),
+                        Country = SafeGetString(reader, 7),
+                        PostCode = SafeGetString(reader, 8),
+                        PhoneHome = SafeGetString(reader, 9),
+                        PhoneMobile = SafeGetString(reader, 10),
+                        PhoneWork = SafeGetString(reader, 11)
                     });
                 }
             }
 
             conn.Close();
             return candidates;
+        }
+
+        public bool CreateCandidate(Candidate candidate)
+        {
+            conn.Open();
+
+            String sql =
+            @"INSERT INTO Candidate (ID,FirstName,Surname,DateOfBirth,Address1,Town,Country,PostCode,PhoneHome,PhoneMobile,PhoneWork,CreatedDate, UpdatedDate)" +
+            "VALUES ((SELECT MAX(ID)+1 FROM Candidate),@FirstName,@Surname,@DateOfBirth,@Address1,@Town,@Country,@PostCode,@PhoneHome,@PhoneMobile,@PhoneWork, GETDATE(), GETDATE())";
+            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.Add("@FirstName", SqlDbType.VarChar, 50).Value = candidate.FirstName;
+                cmd.Parameters.Add("@Surname", SqlDbType.VarChar, 50).Value = candidate.Surname;
+                cmd.Parameters.Add(new SqlParameter("@Address1", candidate.Address1 == null? DBNull.Value: candidate.Address1));
+                cmd.Parameters.Add(new SqlParameter("@DateOfBirth", candidate.DateOfBirth == null ? DBNull.Value : candidate.DateOfBirth));
+                cmd.Parameters.Add(new SqlParameter("@Town", candidate.Town == null ? DBNull.Value : candidate.Town));
+                cmd.Parameters.Add(new SqlParameter("@Country", candidate.Country == null ? DBNull.Value : candidate.Country));
+                cmd.Parameters.Add(new SqlParameter("@PostCode", candidate.PostCode == null ? DBNull.Value : candidate.PostCode));
+                cmd.Parameters.Add(new SqlParameter("@PhoneHome", candidate.PhoneHome == null ? DBNull.Value : candidate.PhoneHome));
+                cmd.Parameters.Add(new SqlParameter("@PhoneMobile", candidate.PhoneMobile == null ? DBNull.Value : candidate.PhoneMobile));
+                cmd.Parameters.Add(new SqlParameter("@PhoneWork", candidate.PhoneWork == null ? DBNull.Value : candidate.PhoneWork));
+                cmd.CommandType = CommandType.Text;
+                cmd.ExecuteNonQuery();
+            }
+                return true;
+        }
+        public static string SafeGetString(SqlDataReader reader, int colIndex)
+        {
+            if (!reader.IsDBNull(colIndex))
+                return reader.GetString(colIndex);
+            return string.Empty;
         }
     }
 
