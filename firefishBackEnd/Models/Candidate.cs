@@ -6,6 +6,8 @@ namespace firefishBackEnd.Models
 {
     public class Candidate
     {
+        [Required]
+        public int ID { get; set; }
         [MaxLength(50), AllowNull]
         public string FirstName { get; set; }
         [MaxLength(50), AllowNull]
@@ -30,6 +32,7 @@ namespace firefishBackEnd.Models
         public DateTime CreatedDate { get; set; }
         [AllowNull]
         public DateTime UpdatedDate { get; set; }
+        public List<int> SkillIDs { get; set; } 
 
         public Candidate()
         {

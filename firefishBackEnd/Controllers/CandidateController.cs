@@ -17,6 +17,20 @@ namespace firefishBackEnd.Controllers
             return Json(candidateService.GetCandidates());
         }
 
+        [HttpGet]
+        [Route("Get")]
+        public JsonResult Get(int ID)
+        {
+            return Json(candidateService.GetCandidate(ID));
+        }
+
+        [HttpPut]
+        [Route("Update")]
+        public ActionResult UpdateCandidate(Candidate candidate)
+        {
+            return Ok(candidateService.UpdateCandidate(candidate));
+        }
+
         [HttpPost]
         [Route("Create")]
         public ActionResult CreateCandidate(Candidate candidate)

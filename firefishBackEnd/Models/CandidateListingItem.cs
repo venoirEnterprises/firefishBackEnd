@@ -2,6 +2,6 @@
 {
     public class CandidateListingItem : Candidate
     {
-        public required string skills { get; set; }
+        public required string SkillNamesConcatanated { get; set; }
     }
 }
